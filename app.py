@@ -41,37 +41,39 @@ with st.sidebar:
 # --- RAKTÁRKÉSZLET MEGJELENÍTÉSE ---
 st.subheader("Aktuális készlet")
 
+# Készítünk egy másolatot a megjelenítéshez
+display_df = df.copy()
+
+# Meghatározzuk a színt és a százalékot a sávhoz (0 és 5000g közötti skálán)
+# A 5000g az elméleti "tele" állapot, ezt állítsd át, ha több magod szokott lenni
+MAX_KAPACITAS = 5000 
+
+# Segédfüggvény a megjelenítéshez (kg/g váltó továbbra is megmarad)
 def format_weight(gramm):
     if gramm >= 1000:
         return f"{gramm / 1000:.2f} kg"
     return f"{int(gramm)} g"
 
-display_df = df.copy()
-display_df["Mennyiség"] = display_df["Mennyiség (g)"].apply(format_weight)
+display_df["Mennyiség kijelző"] = display_df["Mennyiség (g)"].apply(format_weight)
 
-# STABILABB SZÍNEZŐ: Hibakezeléssel ellátva
-def highlight_stock_levels(row):
-    try:
-        # Biztonságos keresés: megkeressük a maghoz tartozó grammot
-        val = df.loc[df["Mag fajtája"] == row["Mag fajtája"], "Mennyiség (g)"].values[0]
-        
-        if val < 200:
-            color = '#ff4b4b'  # Piros
-        elif 200 <= val < 500:
-            color = '#f9d71c'  # Sárga
-        elif 500 <= val < 1000:
-            color = '#90ee90'  # Világoszöld
-        else:
-            color = '#2e8b57'  # Sötétzöld
-            
-        return [f'background-color: {color}' for _ in row]
-    except:
-        # Ha bármi hiba van (pl. épp töröltük a magot), ne omoljon össze, maradjon fehér
-        return ['' for _ in row]
-
-st.dataframe(
-    display_df[["Mag fajtája", "Mennyiség", "Utolsó módosítás"]].style.apply(highlight_stock_levels, axis=1), 
-    use_container_width=True
+# Megjelenítés okos oszlopbeállításokkal
+st.data_editor(
+    display_df[["Mag fajtája", "Mennyiség (g)", "Mennyiség kijelző", "Utolsó módosítás"]],
+    column_config={
+        "Mag fajtája": "Mag neve",
+        "Mennyiség kijelző": "Készlet",
+        "Mennyiség (g)": st.column_config.ProgressColumn(
+            "Töltöttség",
+            help="A mag mennyisége vizuálisan",
+            format="", # Nem írunk számot a sávra, mert ott a mellette lévő oszlop
+            min_value=0,
+            max_value=MAX_KAPACITAS,
+        ),
+        "Utolsó módosítás": "Frissítve"
+    },
+    hide_index=True,
+    use_container_width=True,
+    disabled=True # Így csak nézni lehet, véletlen nem írsz bele
 )
 
 # --- MAG KIVÉTELE / HOZZÁADÁSA ---
