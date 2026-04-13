@@ -81,3 +81,17 @@ with st.expander("Új magfajta felvétele a rendszerbe"):
             # Kényszerített várakozás és újratöltés
             st.cache_data.clear()
             st.rerun()
+
+# --- ADMIN: MAG TÖRLÉSE ---
+with st.sidebar:
+    st.divider()
+    st.subheader("Admin beállítások")
+    torlendo_mag = st.selectbox("Mag törlése a listából", options=["Válassz..."] + df["Mag fajtája"].tolist())
+    if st.button("Törlés véglegesítése"):
+        if torlendo_mag != "Válassz...":
+            # Töröljük a választott magot
+            frissitett_df = df[df["Mag fajtája"] != torlendo_mag]
+            conn.update(worksheet="Magok", data=frissitett_df)
+            st.warning(f"{torlendo_mag} törölve a készletből!")
+            st.cache_data.clear()
+            st.rerun()
