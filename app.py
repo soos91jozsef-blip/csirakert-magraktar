@@ -44,18 +44,18 @@ st.subheader("Aktuális készlet")
 # Készítünk egy másolatot a megjelenítéshez
 display_df = df.copy()
 
-# Meghatározzuk a színt a sávhoz a súly alapján
+# Meghatározzuk a színt a sávhoz (Streamlit által elfogadott angol nevekkel)
 def get_color(gramm):
     if gramm < 200:
-        return "red"
-    elif 200 <= gramm < 500:
-        return "yellow"
-    elif 500 <= gramm < 1000:
-        return "green"
+        return "red"      # Piros
+    elif gramm < 500:
+        return "orange"   # Sárga helyett az orange látványosabb és stabilabb
+    elif gramm < 1000:
+        return "lightgreen" # Világoszöld
     else:
-        return "blue" # A Streamlit 'sötétzöldje' a 'blue' vagy 'green' lehet, teszteljük a green-t
+        return "green"    # Sötétzöld
 
-display_df["Sáv Színe"] = display_df["Mennyiség (g)"].apply(get_color)
+display_df["Szín"] = display_df["Mennyiség (g)"].apply(get_color)
 
 # Segédfüggvény a kg/g kiíráshoz
 def format_weight(gramm):
@@ -65,9 +65,9 @@ def format_weight(gramm):
 
 display_df["Készlet"] = display_df["Mennyiség (g)"].apply(format_weight)
 
-# Megjelenítés
+# Megjelenítés a javított oszlopbeállításokkal
 st.data_editor(
-    display_df[["Mag fajtája", "Mennyiség (g)", "Sáv Színe", "Készlet", "Utolsó módosítás"]],
+    display_df[["Mag fajtája", "Mennyiség (g)", "Szín", "Készlet", "Utolsó módosítás"]],
     column_config={
         "Mag fajtája": "Mag neve",
         "Mennyiség (g)": st.column_config.ProgressColumn(
@@ -75,12 +75,12 @@ st.data_editor(
             help="Vizuális készletjelző",
             format="",
             min_value=0,
-            max_value=5000, # Ezt állítsd a legnagyobb zsákméretedre
-            color="Sáv Színe", # <--- Ez az a bűvös sor!
+            max_value=5000,
+            color="Szín", # Most már a javított "Szín" oszlopból dolgozik
         ),
         "Készlet": "Mennyiség",
         "Utolsó módosítás": "Frissítve",
-        "Sáv Színe": None # Ezt az oszlopot elrejtjük, csak a háttérben kell
+        "Szín": None # Ezt elrejtjük
     },
     hide_index=True,
     use_container_width=True,
