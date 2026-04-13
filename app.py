@@ -9,15 +9,38 @@ st.set_page_config(page_title="Csirakert Magraktár", page_icon="🌱")
 st.title("🌱 Csirakert Magraktár")
 st.write(f"Üdvözöllek, Mester! Kezeld itt a precíziós magkészletet.")
 
-# Kapcsolódás a Google Sheets-hez (a korábbi secrets.toml beállításaidat használva)
+# Kapcsolódás a Google Sheets-hez
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Adatok beolvasása - a ttl=0 azt mondja az appnak, hogy ne tárolja el az adatot, mindig frissítsen
+# Adatok beolvasása - frissítés kényszerítése ttl=0-val
 df = conn.read(worksheet="Magok", ttl=0)
+
+# --- ADMIN: MAG TÖRLÉSE (Sidebar) ---
+with st.sidebar:
+    st.header("⚙️ Adminisztráció")
+    st.write("Itt tudod eltávolítani a hibásan felvitt sorokat.")
+    
+    # Kiválasztjuk melyik magot akarjuk törölni
+    magok_listaja = df["Mag fajtája"].tolist()
+    torlendo_mag = st.selectbox("Válaszd ki a törlendő magot:", options=["-- Válassz --"] + magok_listaja)
+    
+    if st.button("🗑️ Kijelölt mag törlése"):
+        if torlendo_mag != "-- Válassz --":
+            # Szűrjük ki a törlendő magot a táblázatból
+            df_frissitve = df[df["Mag fajtája"] != torlendo_mag]
+            
+            # Mentés a Google Sheets-be
+            conn.update(worksheet="Magok", data=df_frissitve)
+            
+            st.warning(f"'{torlendo_mag}' eltávolítva!")
+            st.cache_data.clear()
+            st.rerun()
+        else:
+            st.error("Nincs kiválasztva mag!")
 
 # --- RAKTÁRKÉSZLET MEGJELENÍTÉSE ---
 st.subheader("Aktuális készlet")
-# Kiszínezzük, ha kevés a mag (pl. 500g alatt)
+
 def highlight_low_stock(s):
     return ['background-color: #ff4b4b' if val < 500 else '' for val in s]
 
@@ -52,32 +75,36 @@ if submit_button:
         conn.update(worksheet="Magok", data=df)
         st.success(f"Frissítve! {mag_tipus}: {regi_ertek}g -> {uj_ertek}g")
         
-        # Ez a két sor kényszeríti az appot az újratöltésre:
         st.cache_data.clear()
         st.rerun()
 
-# --- ÚJ MAG HOZZÁADÁSA ---
+# --- ÚJ MAG HOZZÁADÁSA (VÉDELEMMEL) ---
 with st.expander("Új magfajta felvétele a rendszerbe"):
     with st.form("new_seed_form"):
-        uj_mag = st.text_input("Mag neve")
+        uj_mag = st.text_input("Mag neve").strip()
         kezdo_keszlet = st.number_input("Kezdő készlet (g)", min_value=0, step=100)
         hozzaadas_button = st.form_submit_button("Hozzáadás")
         
         if hozzaadas_button and uj_mag:
-            # Új sor elkészítése
-            uj_adat = pd.DataFrame([{
-                "Mag fajtája": uj_mag, 
-                "Mennyiség (g)": kezdo_keszlet, 
-                "Utolsó módosítás": datetime.now().strftime("%Y-%m-%d %H:%M")
-            }])
+            # Ellenőrizzük, hogy létezik-e már ilyen név (kis/nagybetű nem számít)
+            letezo_magok = [m.lower() for m in df["Mag fajtája"].tolist()]
             
-            # Adat hozzáadása a meglévőhöz
-            frissitett_df = pd.concat([df, uj_adat], ignore_index=True)
-            
-            # Mentés a Google Sheets-be
-            conn.update(worksheet="Magok", data=frissitett_df)
-            
-            st.success(f"{uj_mag} elmentve a raktárba!")
-            # Kényszerített várakozás és újratöltés
-            st.cache_data.clear()
-            st.rerun()
+            if uj_mag.lower() in letezo_magok:
+                st.error(f"Hiba! '{uj_mag}' nevű mag már szerepel a listában.")
+            else:
+                # Új sor elkészítése
+                uj_adat = pd.DataFrame([{
+                    "Mag fajtája": uj_mag, 
+                    "Mennyiség (g)": kezdo_keszlet, 
+                    "Utolsó módosítás": datetime.now().strftime("%Y-%m-%d %H:%M")
+                }])
+                
+                # Adat hozzáadása a meglévőhöz
+                frissitett_df = pd.concat([df, uj_adat], ignore_index=True)
+                
+                # Mentés a Google Sheets-be
+                conn.update(worksheet="Magok", data=frissitett_df)
+                
+                st.success(f"'{uj_mag}' sikeresen rögzítve!")
+                st.cache_data.clear()
+                st.rerun()
