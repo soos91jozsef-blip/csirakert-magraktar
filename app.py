@@ -41,10 +41,25 @@ with st.sidebar:
 # --- RAKTÁRKÉSZLET MEGJELENÍTÉSE ---
 st.subheader("Aktuális készlet")
 
-def highlight_low_stock(s):
-    return ['background-color: #ff4b4b' if val < 500 else '' for val in s]
+# Segédfüggvény az átváltáshoz a megjelenítéshez
+def format_weight(gramm):
+    if gramm >= 1000:
+        return f"{gramm / 1000:.2f} kg"
+    return f"{int(gramm)} g"
 
-st.dataframe(df.style.apply(highlight_low_stock, subset=['Mennyiség (g)']), use_container_width=True)
+# Készítünk egy másolatot a megjelenítéshez, hogy a háttérben megmaradjanak a számok
+display_df = df.copy()
+display_df["Mennyiség"] = display_df["Mennyiség (g)"].apply(format_weight)
+
+# Kiszínezzük a sort, ha kevés a mag (500g alatt)
+def highlight_low_stock(row):
+    return ['background-color: #ff4b4b' if row["Mennyiség (g)"] < 500 else '' for _ in row]
+
+# Megjelenítés (a formázott oszloppal, de a régi oszlop alapján színezve)
+st.dataframe(
+    display_df[["Mag fajtája", "Mennyiség", "Utolsó módosítás"]].style.apply(highlight_low_stock, axis=1), 
+    use_container_width=True
+)
 
 # --- MAG KIVÉTELE / HOZZÁADÁSA ---
 st.divider()
