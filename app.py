@@ -47,15 +47,17 @@ def format_weight(gramm):
         return f"{gramm / 1000:.2f} kg"
     return f"{int(gramm)} g"
 
-# Készítünk egy másolatot a megjelenítéshez, hogy a háttérben megmaradjanak a számok
+# Készítünk egy másolatot a megjelenítéshez
 display_df = df.copy()
 display_df["Mennyiség"] = display_df["Mennyiség (g)"].apply(format_weight)
 
-# Kiszínezzük a sort, ha kevés a mag (500g alatt)
+# JAVÍTOTT SZÍNEZŐ: A háttérben lévő 'df' alapján dönti el a színt, de a 'display_df'-re rakja rá
 def highlight_low_stock(row):
-    return ['background-color: #ff4b4b' if row["Mennyiség (g)"] < 500 else '' for _ in row]
+    # Megkeressük az eredeti gramm értéket a fő táblázatból a mag neve alapján
+    eredeti_gramm = df.loc[df["Mag fajtája"] == row["Mag fajtája"], "Mennyiség (g)"].values[0]
+    return ['background-color: #ff4b4b' if eredeti_gramm < 500 else '' for _ in row]
 
-# Megjelenítés (a formázott oszloppal, de a régi oszlop alapján színezve)
+# Megjelenítés a javított színezéssel
 st.dataframe(
     display_df[["Mag fajtája", "Mennyiség", "Utolsó módosítás"]].style.apply(highlight_low_stock, axis=1), 
     use_container_width=True
