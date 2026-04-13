@@ -44,36 +44,47 @@ st.subheader("Aktuális készlet")
 # Készítünk egy másolatot a megjelenítéshez
 display_df = df.copy()
 
-# Meghatározzuk a színt és a százalékot a sávhoz (0 és 5000g közötti skálán)
-# A 5000g az elméleti "tele" állapot, ezt állítsd át, ha több magod szokott lenni
-MAX_KAPACITAS = 5000 
+# Meghatározzuk a színt a sávhoz a súly alapján
+def get_color(gramm):
+    if gramm < 200:
+        return "red"
+    elif 200 <= gramm < 500:
+        return "yellow"
+    elif 500 <= gramm < 1000:
+        return "green"
+    else:
+        return "blue" # A Streamlit 'sötétzöldje' a 'blue' vagy 'green' lehet, teszteljük a green-t
 
-# Segédfüggvény a megjelenítéshez (kg/g váltó továbbra is megmarad)
+display_df["Sáv Színe"] = display_df["Mennyiség (g)"].apply(get_color)
+
+# Segédfüggvény a kg/g kiíráshoz
 def format_weight(gramm):
     if gramm >= 1000:
         return f"{gramm / 1000:.2f} kg"
     return f"{int(gramm)} g"
 
-display_df["Mennyiség kijelző"] = display_df["Mennyiség (g)"].apply(format_weight)
+display_df["Készlet"] = display_df["Mennyiség (g)"].apply(format_weight)
 
-# Megjelenítés okos oszlopbeállításokkal
+# Megjelenítés
 st.data_editor(
-    display_df[["Mag fajtája", "Mennyiség (g)", "Mennyiség kijelző", "Utolsó módosítás"]],
+    display_df[["Mag fajtája", "Mennyiség (g)", "Sáv Színe", "Készlet", "Utolsó módosítás"]],
     column_config={
         "Mag fajtája": "Mag neve",
-        "Mennyiség kijelző": "Készlet",
         "Mennyiség (g)": st.column_config.ProgressColumn(
             "Töltöttség",
-            help="A mag mennyisége vizuálisan",
-            format="", # Nem írunk számot a sávra, mert ott a mellette lévő oszlop
+            help="Vizuális készletjelző",
+            format="",
             min_value=0,
-            max_value=MAX_KAPACITAS,
+            max_value=5000, # Ezt állítsd a legnagyobb zsákméretedre
+            color="Sáv Színe", # <--- Ez az a bűvös sor!
         ),
-        "Utolsó módosítás": "Frissítve"
+        "Készlet": "Mennyiség",
+        "Utolsó módosítás": "Frissítve",
+        "Sáv Színe": None # Ezt az oszlopot elrejtjük, csak a háttérben kell
     },
     hide_index=True,
     use_container_width=True,
-    disabled=True # Így csak nézni lehet, véletlen nem írsz bele
+    disabled=True
 )
 
 # --- MAG KIVÉTELE / HOZZÁADÁSA ---
