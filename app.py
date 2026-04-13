@@ -47,19 +47,30 @@ def format_weight(gramm):
         return f"{gramm / 1000:.2f} kg"
     return f"{int(gramm)} g"
 
-# Készítünk egy másolatot a megjelenítéshez
+# Másolat a megjelenítéshez
 display_df = df.copy()
 display_df["Mennyiség"] = display_df["Mennyiség (g)"].apply(format_weight)
 
-# JAVÍTOTT SZÍNEZŐ: A háttérben lévő 'df' alapján dönti el a színt, de a 'display_df'-re rakja rá
-def highlight_low_stock(row):
-    # Megkeressük az eredeti gramm értéket a fő táblázatból a mag neve alapján
+# OKOS SZÍNEZŐ: Négy szintű visszajelzés
+def highlight_stock_levels(row):
+    # Eredeti gramm érték kikeresése
     eredeti_gramm = df.loc[df["Mag fajtája"] == row["Mag fajtája"], "Mennyiség (g)"].values[0]
-    return ['background-color: #ff4b4b' if eredeti_gramm < 500 else '' for _ in row]
+    
+    # Szín meghatározása a szintek alapján
+    if eredeti_gramm < 200:
+        color = '#ff4b4b'  # Piros (Veszélyesen kevés)
+    elif 200 <= eredeti_gramm < 500:
+        color = '#f9d71c'  # Sárga (Figyelem, lassan fogy)
+    elif 500 <= eredeti_gramm < 1000:
+        color = '#90ee90'  # Világos zöld (Rendben van)
+    else:
+        color = '#2e8b57'  # Sötétzöld (Bőséges készlet)
+        
+    return [f'background-color: {color}' for _ in row]
 
-# Megjelenítés a javított színezéssel
+# Megjelenítés a kibővített színkódokkal
 st.dataframe(
-    display_df[["Mag fajtája", "Mennyiség", "Utolsó módosítás"]].style.apply(highlight_low_stock, axis=1), 
+    display_df[["Mag fajtája", "Mennyiség", "Utolsó módosítás"]].style.apply(highlight_stock_levels, axis=1), 
     use_container_width=True
 )
 
