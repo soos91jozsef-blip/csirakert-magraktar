@@ -41,46 +41,40 @@ with st.sidebar:
 # --- RAKTÁRKÉSZLET MEGJELENÍTÉSE ---
 st.subheader("Aktuális készlet")
 
-# Készítünk egy másolatot a megjelenítéshez
 display_df = df.copy()
 
-# Meghatározzuk a színt a sávhoz (Streamlit által elfogadott angol nevekkel)
-def get_color(gramm):
+# Segédfüggvény a kg/g váltóhoz és az Emojikhoz
+def format_with_status(gramm):
+    # Mértékegység meghatározása
+    suly_szoveg = f"{gramm / 1000:.2f} kg" if gramm >= 1000 else f"{int(gramm)} g"
+    
+    # Állapotjelző emoji meghatározása
     if gramm < 200:
-        return "red"      # Piros
+        return f"🔴 {suly_szoveg}"
     elif gramm < 500:
-        return "orange"   # Sárga helyett az orange látványosabb és stabilabb
+        return f"🟡 {suly_szoveg}"
     elif gramm < 1000:
-        return "lightgreen" # Világoszöld
+        return f"🟢 {suly_szoveg}"
     else:
-        return "green"    # Sötétzöld
+        return f"✅ {suly_szoveg}"
 
-display_df["Szín"] = display_df["Mennyiség (g)"].apply(get_color)
+display_df["Készlet"] = display_df["Mennyiség (g)"].apply(format_with_status)
 
-# Segédfüggvény a kg/g kiíráshoz
-def format_weight(gramm):
-    if gramm >= 1000:
-        return f"{gramm / 1000:.2f} kg"
-    return f"{int(gramm)} g"
-
-display_df["Készlet"] = display_df["Mennyiség (g)"].apply(format_weight)
-
-# Megjelenítés a javított oszlopbeállításokkal
+# Megjelenítés
 st.data_editor(
-    display_df[["Mag fajtája", "Mennyiség (g)", "Szín", "Készlet", "Utolsó módosítás"]],
+    display_df[["Mag fajtája", "Mennyiség (g)", "Készlet", "Utolsó módosítás"]],
     column_config={
         "Mag fajtája": "Mag neve",
         "Mennyiség (g)": st.column_config.ProgressColumn(
-            "Töltöttség",
-            help="Vizuális készletjelző",
+            "Szint",
+            help="Vizuális telítettség",
             format="",
             min_value=0,
             max_value=5000,
-            color="Szín", # Most már a javított "Szín" oszlopból dolgozik
+            color="blue", # Fix kék sáv, ez stabil
         ),
-        "Készlet": "Mennyiség",
-        "Utolsó módosítás": "Frissítve",
-        "Szín": None # Ezt elrejtjük
+        "Készlet": "Állapot",
+        "Utolsó módosítás": "Frissítve"
     },
     hide_index=True,
     use_container_width=True,
