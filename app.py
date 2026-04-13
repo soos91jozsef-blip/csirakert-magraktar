@@ -41,34 +41,34 @@ with st.sidebar:
 # --- RAKTÁRKÉSZLET MEGJELENÍTÉSE ---
 st.subheader("Aktuális készlet")
 
-# Segédfüggvény az átváltáshoz a megjelenítéshez
 def format_weight(gramm):
     if gramm >= 1000:
         return f"{gramm / 1000:.2f} kg"
     return f"{int(gramm)} g"
 
-# Másolat a megjelenítéshez
 display_df = df.copy()
 display_df["Mennyiség"] = display_df["Mennyiség (g)"].apply(format_weight)
 
-# OKOS SZÍNEZŐ: Négy szintű visszajelzés
+# STABILABB SZÍNEZŐ: Hibakezeléssel ellátva
 def highlight_stock_levels(row):
-    # Eredeti gramm érték kikeresése
-    eredeti_gramm = df.loc[df["Mag fajtája"] == row["Mag fajtája"], "Mennyiség (g)"].values[0]
-    
-    # Szín meghatározása a szintek alapján
-    if eredeti_gramm < 200:
-        color = '#ff4b4b'  # Piros (Veszélyesen kevés)
-    elif 200 <= eredeti_gramm < 500:
-        color = '#f9d71c'  # Sárga (Figyelem, lassan fogy)
-    elif 500 <= eredeti_gramm < 1000:
-        color = '#90ee90'  # Világos zöld (Rendben van)
-    else:
-        color = '#2e8b57'  # Sötétzöld (Bőséges készlet)
+    try:
+        # Biztonságos keresés: megkeressük a maghoz tartozó grammot
+        val = df.loc[df["Mag fajtája"] == row["Mag fajtája"], "Mennyiség (g)"].values[0]
         
-    return [f'background-color: {color}' for _ in row]
+        if val < 200:
+            color = '#ff4b4b'  # Piros
+        elif 200 <= val < 500:
+            color = '#f9d71c'  # Sárga
+        elif 500 <= val < 1000:
+            color = '#90ee90'  # Világoszöld
+        else:
+            color = '#2e8b57'  # Sötétzöld
+            
+        return [f'background-color: {color}' for _ in row]
+    except:
+        # Ha bármi hiba van (pl. épp töröltük a magot), ne omoljon össze, maradjon fehér
+        return ['' for _ in row]
 
-# Megjelenítés a kibővített színkódokkal
 st.dataframe(
     display_df[["Mag fajtája", "Mennyiség", "Utolsó módosítás"]].style.apply(highlight_stock_levels, axis=1), 
     use_container_width=True
