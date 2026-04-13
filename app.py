@@ -12,8 +12,8 @@ st.write(f"Üdvözöllek, Mester! Kezeld itt a precíziós magkészletet.")
 # Kapcsolódás a Google Sheets-hez (a korábbi secrets.toml beállításaidat használva)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Adatok beolvasása (Feltételezzük, hogy a táblázat neve 'Magok')
-df = conn.read(worksheet="Magok")
+# Adatok beolvasása - a ttl=0 azt mondja az appnak, hogy ne tárolja el az adatot, mindig frissítsen
+df = conn.read(worksheet="Magok", ttl=0)
 
 # --- RAKTÁRKÉSZLET MEGJELENÍTÉSE ---
 st.subheader("Aktuális készlet")
@@ -51,8 +51,9 @@ if submit_button:
         # Mentés a Google Sheets-be
         conn.update(worksheet="Magok", data=df)
         st.success(f"Frissítve! {mag_tipus}: {regi_ertek}g -> {uj_ertek}g")
-        st.balloons()
-        # Oldal újratöltése a friss adatokkal
+        
+        # Ez a két sor kényszeríti az appot az újratöltésre:
+        st.cache_data.clear()
         st.rerun()
 
 # --- ÚJ MAG HOZZÁADÁSA ---
