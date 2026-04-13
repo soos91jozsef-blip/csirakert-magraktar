@@ -57,11 +57,26 @@ if submit_button:
 
 # --- ÚJ MAG HOZZÁADÁSA ---
 with st.expander("Új magfajta felvétele a rendszerbe"):
-    uj_mag = st.text_input("Mag neve")
-    kezdo_keszlet = st.number_input("Kezdő készlet (g)", min_value=0, step=100)
-    if st.button("Hozzáadás"):
-        uj_sor = pd.DataFrame([{"Mag fajtája": uj_mag, "Mennyiség (g)": kezdo_keszlet, "Utolsó módosítás": datetime.now().strftime("%Y-%m-%d %H:%M")}])
-        df = pd.concat([df, uj_sor], ignore_index=True)
-        conn.update(worksheet="Magok", data=df)
-        st.success(f"{uj_mag} hozzáadva!")
-        st.rerun()
+    with st.form("new_seed_form"):
+        uj_mag = st.text_input("Mag neve")
+        kezdo_keszlet = st.number_input("Kezdő készlet (g)", min_value=0, step=100)
+        hozzaadas_button = st.form_submit_button("Hozzáadás")
+        
+        if hozzaadas_button and uj_mag:
+            # Új sor elkészítése
+            uj_adat = pd.DataFrame([{
+                "Mag fajtája": uj_mag, 
+                "Mennyiség (g)": kezdo_keszlet, 
+                "Utolsó módosítás": datetime.now().strftime("%Y-%m-%d %H:%M")
+            }])
+            
+            # Adat hozzáadása a meglévőhöz
+            frissitett_df = pd.concat([df, uj_adat], ignore_index=True)
+            
+            # Mentés a Google Sheets-be
+            conn.update(worksheet="Magok", data=frissitett_df)
+            
+            st.success(f"{uj_mag} elmentve a raktárba!")
+            # Kényszerített várakozás és újratöltés
+            st.cache_data.clear()
+            st.rerun()
