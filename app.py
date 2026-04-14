@@ -14,6 +14,8 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Adatok beolvasása (Minden alkalommal frissítjük)
 df = conn.read(worksheet="Magok", ttl=0)
+# Adatok beolvasása után azonnal kiszűrjük az üres sorokat
+df = df.dropna(subset=["Mag fajtája", "Helyszín"])
 
 # --- HELYSZÍN VÁLASZTÁSA ---
 st.divider()
