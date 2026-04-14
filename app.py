@@ -92,3 +92,27 @@ with st.expander("➕ Új magfajta felvétele ebbe a raktárba"):
         conn.update(worksheet="Magok", data=df)
         st.success(f"{uj_mag_nev} rögzítve {valasztott_helyszin} helyszínre!")
         st.rerun()
+# --- ADMINISZTRÁCIÓ (TÖRLÉS) ---
+st.divider()
+with st.expander("🗑️ Adminisztráció (Mag törlése)"):
+    st.warning(f"Figyelem! Innen csak a(z) {valasztott_helyszin} raktárból törölhetsz magot.")
+    
+    # Csak az adott helyszín magjait listázzuk
+    torlendo_magok = df[df["Helyszín"] == valasztott_helyszin]["Mag fajtája"].tolist()
+    
+    if torlendo_magok:
+        valasztott_torlesre = st.selectbox("Melyik magot töröljük véglegesen?", ["-- Válassz --"] + torlendo_magok)
+        
+        if st.button("Kijelölt mag törlése"):
+            if valasztott_torlesre != "-- Válassz --":
+                # Sor eltávolítása (Helyszín ÉS Név alapján)
+                df = df.drop(df[(df["Helyszín"] == valasztott_helyszin) & (df["Mag fajtája"] == valasztott_torlesre)].index)
+                
+                # Google Sheets frissítése
+                conn.update(worksheet="Magok", data=df)
+                st.success(f"A(z) {valasztott_torlesre} magot sikeresen eltávolítottuk a(z) {valasztott_helyszin} raktárból.")
+                st.rerun()
+            else:
+                st.error("Kérlek, válassz ki egy magot a törléshez!")
+    else:
+        st.info("Ebben a raktárban nincs törölhető mag.")
